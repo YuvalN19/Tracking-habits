@@ -1,0 +1,1949 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="אל תשבור את השרשרת" />
+<meta name="theme-color" content="#152018" />
+<title>אל תשבור את השרשרת</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23152018'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle'%3E%F0%9F%94%97%3C/text%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23152018'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle'%3E%F0%9F%94%97%3C/text%3E%3C/svg%3E" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #152018;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #root { min-height: 100vh; }
+  #boot-status {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8FA093;
+    font-family: -apple-system, sans-serif;
+    font-size: 13px;
+    text-align: center;
+    padding: 24px;
+    direction: rtl;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    z-index: 0;
+  }
+</style>
+</head>
+<body>
+<div id="root"><div id="boot-status">טוען…</div></div>
+
+<script>
+  // Surface any load/runtime error instead of leaving a silent spinner.
+  window.addEventListener("error", function (e) {
+    var el = document.getElementById("boot-status");
+    if (el) el.textContent = "משהו נכשל בטעינה:\n" + (e.message || e.error || "שגיאה לא ידועה") + "\n\nנסו לרענן, או לבדוק חיבור לאינטרנט (האפליקציה טוענת ספריות בפתיחה הראשונה).";
+  });
+</script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect } = React;
+
+function Icon({ path, size = 24, strokeWidth = 2, color = "currentColor", style, className }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={style}
+      className={className}
+      dangerouslySetInnerHTML={{ __html: path }}
+    />
+  );
+}
+
+const ICON_PATHS = {
+  Plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  X: '<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
+  Flame: '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  Trash2: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
+  Link2: '<path d="M15 7h3a5 5 0 0 1 5 5 5 5 0 0 1-5 5h-3"/><path d="M9 17H6a5 5 0 0 1-5-5 5 5 0 0 1 5-5h3"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  Pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  Archive: '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/>',
+  ArchiveRestore: '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M9.5 13 12 10.5 14.5 13"/><line x1="12" y1="10.5" x2="12" y2="16"/>',
+  ChevronDown: '<path d="m6 9 6 6 6-6"/>',
+  ChevronUp: '<path d="m18 15-6-6-6 6"/>',
+  BarChart3: '<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  Home: '<path d="M3 9.5 12 3l9 6.5"/><path d="M5 10v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9"/><path d="M9 21v-6h6v6"/>',
+  Settings: '<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
+  Download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+  Check: '<path d="M20 6 9 17l-5-5"/>',
+  RotateCcw: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+};
+
+function makeIcon(name) {
+  const p = ICON_PATHS[name];
+  return function (props) {
+    return <Icon path={p} {...props} />;
+  };
+}
+
+const Plus = makeIcon("Plus");
+const X = makeIcon("X");
+const Flame = makeIcon("Flame");
+const Trash2 = makeIcon("Trash2");
+const Link2 = makeIcon("Link2");
+const Pencil = makeIcon("Pencil");
+const Archive = makeIcon("Archive");
+const ArchiveRestore = makeIcon("ArchiveRestore");
+const ChevronDown = makeIcon("ChevronDown");
+const ChevronUp = makeIcon("ChevronUp");
+const BarChart3 = makeIcon("BarChart3");
+const Home = makeIcon("Home");
+const Settings = makeIcon("Settings");
+const Download = makeIcon("Download");
+const Check = makeIcon("Check");
+const RotateCcw = makeIcon("RotateCcw");
+
+
+ICON_PATHS.Award = '<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>';
+ICON_PATHS.Lock = '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+const Award = makeIcon("Award");
+const Lock = makeIcon("Lock");
+// Local storage shim matching the {get,set} shape the component expects.
+const storage = {
+  async get(key) {
+    const raw = localStorage.getItem(key);
+    return raw === null ? null : { key, value: raw };
+  },
+  async set(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return { key, value };
+    } catch (e) {
+      return null;
+    }
+  },
+};
+
+
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@keyframes popIn {
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-24px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(420px) rotate(360deg); opacity: 0; }
+}
+@keyframes overlayFade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes blobDriftA {
+  0%, 100% { transform: translate(-6%, -8%) scale(1); }
+  50% { transform: translate(8%, 6%) scale(1.15); }
+}
+@keyframes blobDriftB {
+  0%, 100% { transform: translate(6%, -4%) scale(1.05); }
+  50% { transform: translate(-8%, 8%) scale(0.92); }
+}
+@keyframes blobDriftC {
+  0%, 100% { transform: translate(0%, 10%) scale(0.95); }
+  50% { transform: translate(4%, -10%) scale(1.1); }
+}
+@keyframes blobDriftD {
+  0%, 100% { transform: translate(-8%, 4%) scale(1); }
+  50% { transform: translate(10%, -6%) scale(1.12); }
+}
+@keyframes blobDriftE {
+  0%, 100% { transform: translate(4%, 8%) scale(0.9); }
+  50% { transform: translate(-10%, -4%) scale(1.08); }
+}
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes emberRise {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-70vh) translateX(var(--drift, 12px)); opacity: 0; }
+}
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes cardIn {
+  0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tap-3d {
+  transition: transform 0.15s cubic-bezier(0.3,0.8,0.4,1), box-shadow 0.15s ease;
+  transform-style: preserve-3d;
+}
+.tap-3d:active {
+  transform: perspective(400px) scale(0.96) rotateX(3deg);
+}
+.card-in {
+  animation: cardIn 0.4s cubic-bezier(0.2,0.8,0.3,1) both;
+}`;
+
+const PALETTE = [
+  { name: "אמבר", hex: "#E0A339" },
+  { name: "אזוב", hex: "#5C9A6E" },
+  { name: "חימר", hex: "#BD5B37" },
+  { name: "תכלת", hex: "#5B84A8" },
+  { name: "חרדל", hex: "#C9A227" },
+  { name: "אוכר", hex: "#A8763E" },
+];
+
+// Index matches JS Date.getDay(): 0=Sunday ... 6=Saturday
+const WEEKDAY_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+
+const EMOJI_CATEGORIES = [
+  {
+    title: "פעילות וספורט",
+    items: ["🏃", "🚴", "🏊", "🏋️", "🧘", "🤸", "🥊", "⚽", "🏀", "🎾", "🚶", "🧗", "🏂", "⛷️", "🏄", "🤾", "🚣", "🥋", "🧎", "💪"],
+  },
+  {
+    title: "אוכל ושתייה",
+    items: ["💧", "☕", "🍵", "🥗", "🍎", "🍌", "🥦", "🥕", "🍚", "🍞", "🥛", "🍇", "🍓", "🥑", "🍳", "🍲", "🍫", "🍩", "🍺", "🚭"],
+  },
+  {
+    title: "מוח ולמידה",
+    items: ["📖", "📚", "📝", "✍️", "🎨", "🎵", "🎸", "🎹", "🧠", "💡", "🧩", "🔬", "🖋️", "📐", "🌐", "💻", "📊", "🗣️", "👂", "🎧"],
+  },
+  {
+    title: "טבע ובית",
+    items: ["🌱", "🌳", "🌸", "🌞", "🌙", "⭐", "🔥", "🧹", "🧺", "🛏️", "🧴", "🪴", "🐶", "🐱", "🌈", "❄️", "🍃", "🏡", "🧽", "🪟"],
+  },
+  {
+    title: "עבודה וכסף",
+    items: ["💰", "💳", "📈", "📅", "⏰", "✅", "🗂️", "📌", "💼", "🧾", "🎯", "🚀", "🏆", "🔧", "📦", "🖊️", "🗓️", "⏳", "🧮", "🖥️"],
+  },
+  {
+    title: "רגשות וסמלים",
+    items: ["❤️", "🙏", "😊", "😴", "🎉", "🙌", "👏", "✨", "🌟", "🕊️", "☀️", "🌧️", "🌤️", "🔔", "🎁", "🏅", "🥇", "🔑", "🥋", "🧘‍♂️"],
+  },
+];
+
+const EMOJI_OPTIONS = EMOJI_CATEGORIES.flatMap((c) => c.items);
+
+const TAB_LIST = [
+  { id: "home", label: "בית", Icon: Home },
+  { id: "stats", label: "נתונים", Icon: BarChart3 },
+  { id: "achievements", label: "הישגים", Icon: Award },
+  { id: "settings", label: "הגדרות", Icon: Settings },
+];
+
+function tierBadges(prefix, tiers, emojis, statKey, labelFn, descFn) {
+  return tiers.map((t, i) => ({
+    id: `${prefix}_${t}`,
+    emoji: emojis[i],
+    label: labelFn(t),
+    desc: descFn(t),
+    check: (s) => s[statKey] >= t,
+    progress: (s) => Math.min(1, s[statKey] / t),
+  }));
+}
+
+const BADGES = [
+  ...tierBadges(
+    "streak",
+    [1, 3, 7, 14, 21, 30, 45, 60, 66, 75, 90, 100],
+    ["🌱", "✨", "🔥", "🔥", "🌙", "🌙", "⚡", "⚡", "🧠", "🚀", "💪", "💯"],
+    "bestEverStreak",
+    (t) => `רצף ${t} ימים`,
+    (t) => `רצף רציף של ${t} ימים בהרגל אחד`
+  ),
+  ...tierBadges(
+    "goals",
+    [1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50],
+    ["🏆", "🎖️", "🥉", "🥈", "🥇", "👑", "🏅", "💎", "🌟", "🎯", "🚩", "🛡️"],
+    "goalsCompleted",
+    (t) => (t === 1 ? "יעד ראשון" : `${t} יעדים שהושלמו`),
+    (t) => `השלמת ${t} יעד${t === 1 ? "" : "ים"} בסך הכל`
+  ),
+  ...tierBadges(
+    "checkins",
+    [10, 25, 50, 75, 100, 150, 200, 250, 300, 365, 500, 730],
+    ["📘", "📗", "📙", "📕", "📓", "📔", "📚", "🗓️", "📅", "📆", "🗃️", "🏛️"],
+    "totalCheckins",
+    (t) => `${t} סימונים`,
+    (t) => `${t} סימוני "בוצע" בסך הכל`
+  ),
+  ...tierBadges(
+    "active",
+    [1, 2, 3, 5, 7, 10],
+    ["🎯", "🧩", "🧩", "🎪", "🎪", "🎡"],
+    "activeCount",
+    (t) => (t === 1 ? "הרגל ראשון" : `${t} הרגלים במקביל`),
+    (t) => `${t} הרגלים פעילים בו-זמנית`
+  ),
+  ...tierBadges(
+    "archive",
+    [1, 2, 3, 5],
+    ["📦", "📦", "🗄️", "🗄️"],
+    "archivedCount",
+    (t) => (t === 1 ? "לארכיון" : `${t} בארכיון`),
+    (t) => `${t} הרגלים הועברו לארכיון`
+  ),
+  ...tierBadges(
+    "created",
+    [1, 3, 5, 10],
+    ["🌱", "🌿", "🌳", "🌲"],
+    "habitCount",
+    (t) => `${t} הרגלים נוצרו`,
+    (t) => `יצרת בסך הכל ${t} הרגלים`
+  ),
+];
+
+const BG = "#152018";
+const BG_CARD = "#1C2A21";
+const BG_CELL = "#233227";
+const TEXT_MAIN = "#EEE7D6";
+const TEXT_MUTED = "#8FA093";
+const BORDER = "#2E4033";
+
+const AMBIENT_BG = `
+  radial-gradient(900px 520px at 12% -8%, rgba(224,163,57,0.11), transparent 60%),
+  radial-gradient(760px 520px at 105% 6%, rgba(92,154,110,0.07), transparent 55%),
+  radial-gradient(1100px 700px at 50% 115%, rgba(0,0,0,0.4), transparent 60%),
+  ${BG}
+`;
+
+const NOISE_BG = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
+
+function formatWeekday(d) {
+  return new Intl.DateTimeFormat("he-IL", { weekday: "long" }).format(d);
+}
+
+function formatDateShort(d) {
+  return new Intl.DateTimeFormat("he-IL", { day: "numeric", month: "long" }).format(d);
+}
+
+function formatTime(d) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function dateStrDaysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function chunk(arr, size) {
+  const rows = [];
+  for (let i = 0; i < arr.length; i += size) rows.push(arr.slice(i, i + size));
+  return rows;
+}
+
+function dateFromStr(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function weekdayLetter(dateStr) {
+  return new Intl.DateTimeFormat("he-IL", { weekday: "narrow" }).format(dateFromStr(dateStr));
+}
+
+function daysBetween(a, b) {
+  return Math.round((dateFromStr(b) - dateFromStr(a)) / (1000 * 60 * 60 * 24));
+}
+
+function isScheduledDay(habit, dateStr) {
+  const days = habit.schedule && habit.schedule.days;
+  if (!days || days.length === 0 || days.length === 7) return true;
+  return days.includes(dateFromStr(dateStr).getDay());
+}
+
+function currentStreak(habit) {
+  const completions = habit.completions || {};
+  const freezes = habit.freezes || {};
+  let streak = 0;
+  let i = 0;
+  while (true) {
+    const d = dateStrDaysAgo(i);
+    if (!isScheduledDay(habit, d)) {
+      i++;
+      continue;
+    }
+    if (completions[d] || freezes[d]) {
+      streak++;
+      i++;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function longestStreak(habit) {
+  const completions = habit.completions || {};
+  const freezes = habit.freezes || {};
+  const created = habit.createdAt || todayStr();
+  const span = Math.max(0, daysBetween(created, todayStr()));
+  let longest = 0;
+  let run = 0;
+  for (let i = span; i >= 0; i--) {
+    const d = dateStrDaysAgo(i);
+    if (!isScheduledDay(habit, d)) continue;
+    if (completions[d] || freezes[d]) {
+      run++;
+      if (run > longest) longest = run;
+    } else {
+      run = 0;
+    }
+  }
+  return longest;
+}
+
+function HabitTracker() {
+  const [habits, setHabits] = useState(null); // null = loading
+  const [error, setError] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState(PALETTE[0].hex);
+  const [newTarget, setNewTarget] = useState(50);
+  const [newPurpose, setNewPurpose] = useState("");
+  const [newEmoji, setNewEmoji] = useState(EMOJI_OPTIONS[0]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [newScheduleDays, setNewScheduleDays] = useState(ALL_DAYS);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [celebrateHabit, setCelebrateHabit] = useState(null);
+  const [showArchive, setShowArchive] = useState(false);
+  const [tab, setTab] = useState("home"); // "home" | "stats" | "settings"
+  const [exportFeedback, setExportFeedback] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  useEffect(() => {
+    if (!celebrateHabit) return;
+    const t = setTimeout(() => setCelebrateHabit(null), 4000);
+    return () => clearTimeout(t);
+  }, [celebrateHabit]);
+
+  const [today, setToday] = useState(todayStr());
+  const [clockNow, setClockNow] = useState(new Date());
+
+  // Live clock for the header date/time — purely cosmetic, ticks every second.
+  useEffect(() => {
+    const id = setInterval(() => setClockNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Watch the device clock and pick up midnight rollovers without a reload.
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = todayStr();
+      setToday((prev) => (prev !== now ? now : prev));
+    }, 30000); // check every 30s — cheap, and a minute of lag past midnight is harmless
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const result = await storage.get("habits");
+        setHabits(result ? JSON.parse(result.value) : []);
+      } catch (e) {
+        setHabits([]);
+      }
+    })();
+  }, []);
+
+  async function persist(next) {
+    setHabits(next);
+    try {
+      const result = await storage.set("habits", JSON.stringify(next));
+      if (!result) setError("השמירה נכשלה, נסה שוב");
+      else setError(null);
+    } catch (e) {
+      setError("השמירה נכשלה, נסה שוב");
+    }
+  }
+
+  function resetForm() {
+    setNewName("");
+    setNewColor(PALETTE[0].hex);
+    setNewTarget(50);
+    setNewPurpose("");
+    setNewEmoji(EMOJI_OPTIONS[0]);
+    setNewScheduleDays(ALL_DAYS);
+    setEditingId(null);
+    setShowAdd(false);
+    setShowEmojiPicker(false);
+  }
+
+  function openAddSheet() {
+    setEditingId(null);
+    setNewName("");
+    setNewColor(PALETTE[0].hex);
+    setNewTarget(50);
+    setNewPurpose("");
+    setNewEmoji(EMOJI_OPTIONS[0]);
+    setNewScheduleDays(ALL_DAYS);
+    setShowAdd(true);
+  }
+
+  function openEditSheet(habit) {
+    setEditingId(habit.id);
+    setNewName(habit.name);
+    setNewColor(habit.color);
+    setNewTarget(habit.target || 50);
+    setNewPurpose(habit.purpose || "");
+    setNewEmoji(habit.emoji || EMOJI_OPTIONS[0]);
+    setNewScheduleDays((habit.schedule && habit.schedule.days && habit.schedule.days.length) ? habit.schedule.days : ALL_DAYS);
+    setShowAdd(true);
+  }
+
+  function toggleScheduleDay(day) {
+    setNewScheduleDays((prev) => {
+      if (prev.length === 7) {
+        // Currently "every day" — tapping a specific day starts a fresh custom selection
+        // with just that day, instead of merely removing it from the full week.
+        return [day];
+      }
+      if (prev.includes(day)) {
+        const next = prev.filter((d) => d !== day);
+        return next.length === 0 ? prev : next; // keep at least one day selected
+      }
+      return [...prev, day].sort();
+    });
+  }
+
+  function submitHabitForm() {
+    const name = newName.trim();
+    if (!name) return;
+    const target = Number(newTarget) || 50;
+    const purpose = newPurpose.trim();
+    const schedule = { days: [...newScheduleDays].sort() };
+
+    if (editingId) {
+      const next = habits.map((h) =>
+        h.id === editingId ? { ...h, name, color: newColor, target, purpose, emoji: newEmoji, schedule } : h
+      );
+      persist(next);
+    } else {
+      const habit = {
+        id: `h_${Date.now()}`,
+        name,
+        color: newColor,
+        target,
+        purpose,
+        emoji: newEmoji,
+        schedule,
+        createdAt: today,
+        completions: {},
+        freezes: {},
+      };
+      persist([...(habits || []), habit]);
+    }
+    resetForm();
+  }
+
+  function toggleToday(habitId) {
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit) return;
+    const wasFilled = !!habit.completions[today];
+    const prevProgress = Object.values(habit.completions).filter(Boolean).length;
+    const completions = { ...habit.completions };
+    if (wasFilled) delete completions[today];
+    else completions[today] = true;
+    const newProgress = Object.values(completions).filter(Boolean).length;
+    const target = habit.target || 50;
+
+    // Marking a day complete cancels any "day off" freeze on that same day.
+    const freezes = { ...(habit.freezes || {}) };
+    if (!wasFilled) delete freezes[today];
+
+    const next = habits.map((h) => (h.id === habitId ? { ...h, completions, freezes } : h));
+    persist(next);
+
+    if (!wasFilled && prevProgress < target && newProgress >= target) {
+      setCelebrateHabit({ name: habit.name, color: habit.color, target });
+    }
+  }
+
+  function toggleFreeze(habitId) {
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit) return;
+    if (habit.completions[today]) return; // can't freeze an already-completed day
+    const freezes = { ...(habit.freezes || {}) };
+    if (freezes[today]) delete freezes[today];
+    else freezes[today] = true;
+    persist(habits.map((h) => (h.id === habitId ? { ...h, freezes } : h)));
+  }
+
+  function deleteHabit(habitId) {
+    persist(habits.filter((h) => h.id !== habitId));
+    setConfirmDelete(null);
+  }
+
+  function archiveHabit(habitId) {
+    persist(habits.map((h) => (h.id === habitId ? { ...h, archived: true } : h)));
+  }
+
+  function restoreHabit(habitId) {
+    persist(habits.map((h) => (h.id === habitId ? { ...h, archived: false } : h)));
+  }
+
+  function exportHabits() {
+    try {
+      const dataStr = JSON.stringify(habits, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `הרגלים-${today}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setExportFeedback(true);
+      setTimeout(() => setExportFeedback(false), 2000);
+    } catch (e) {
+      setError("הייצוא נכשל, נסה שוב");
+    }
+  }
+
+  if (habits === null) {
+    return (
+      <div
+        style={{ background: BG, color: TEXT_MUTED, fontFamily: "'IBM Plex Sans', sans-serif" }}
+        className="min-h-screen flex items-center justify-center"
+      >
+        <style>{FONT_IMPORT}</style>
+        טוען…
+      </div>
+    );
+  }
+
+  const activeHabits = habits.filter((h) => !h.archived);
+  const archivedHabits = habits.filter((h) => h.archived);
+  const isCustomColor = !PALETTE.some((c) => c.hex.toLowerCase() === (newColor || "").toLowerCase());
+
+  const totalCheckins = habits.reduce(
+    (sum, h) => sum + Object.values(h.completions).filter(Boolean).length,
+    0
+  );
+  const totalGoalsCompleted = habits.filter(
+    (h) => Object.values(h.completions).filter(Boolean).length >= (h.target || 50)
+  ).length;
+  const bestCurrentStreak = habits.length ? Math.max(0, ...habits.map((h) => currentStreak(h))) : 0;
+  const bestEverStreak = habits.length ? Math.max(0, ...habits.map((h) => longestStreak(h))) : 0;
+  const badgeStats = {
+    habitCount: habits.length,
+    totalCheckins,
+    goalsCompleted: totalGoalsCompleted,
+    bestEverStreak,
+    activeCount: activeHabits.length,
+    archivedCount: archivedHabits.length,
+  };
+  const unlockedBadgeCount = BADGES.filter((b) => b.check(badgeStats)).length;
+  const doneTodayCount = activeHabits.filter((h) => h.completions[today]).length;
+  const habitsCreatedToday = habits.filter((h) => h.createdAt === today).length;
+  const weekDays = Array.from({ length: 7 }, (_, i) => dateStrDaysAgo(i)); // today first
+  const weekCounts = weekDays.map((d) => habits.filter((h) => h.completions[d]).length);
+  const weekMax = Math.max(1, ...weekCounts);
+  const rankedHabits = [...habits]
+    .map((h) => ({
+      ...h,
+      progress: Object.values(h.completions).filter(Boolean).length,
+      target: h.target || 50,
+    }))
+    .sort((a, b) => b.progress / b.target - a.progress / a.target)
+    .slice(0, 5);
+
+  return (
+    <div
+      dir="rtl"
+      style={{ background: AMBIENT_BG, color: TEXT_MAIN, fontFamily: "'IBM Plex Sans', sans-serif" }}
+      className="min-h-screen w-full relative"
+    >
+      <style>{FONT_IMPORT}</style>
+
+      {/* Subtle paper-grain texture, purely atmospheric */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          backgroundImage: NOISE_BG,
+          backgroundSize: "140px 140px",
+          opacity: 0.035,
+          mixBlendMode: "overlay",
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Slowly drifting glow blobs — gives the background a living, breathing quality */}
+      <div aria-hidden="true" style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "-14%",
+            left: "50%",
+            width: 340,
+            height: 340,
+            marginLeft: -170,
+            borderRadius: "9999px",
+            background: PALETTE[0].hex,
+            opacity: 0.18,
+            filter: "blur(80px)",
+            animation: "pulseGlow 6s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "-10%",
+            left: "-10%",
+            width: 280,
+            height: 280,
+            borderRadius: "9999px",
+            background: PALETTE[0].hex,
+            opacity: 0.1,
+            filter: "blur(60px)",
+            animation: "blobDriftA 14s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "5%",
+            right: "-15%",
+            width: 260,
+            height: 260,
+            borderRadius: "9999px",
+            background: PALETTE[1].hex,
+            opacity: 0.08,
+            filter: "blur(70px)",
+            animation: "blobDriftB 18s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "-10%",
+            left: "20%",
+            width: 240,
+            height: 240,
+            borderRadius: "9999px",
+            background: PALETTE[3].hex,
+            opacity: 0.06,
+            filter: "blur(65px)",
+            animation: "blobDriftC 20s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "35%",
+            right: "10%",
+            width: 220,
+            height: 220,
+            borderRadius: "9999px",
+            background: PALETTE[2].hex,
+            opacity: 0.06,
+            filter: "blur(65px)",
+            animation: "blobDriftD 16s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10%",
+            right: "-10%",
+            width: 260,
+            height: 260,
+            borderRadius: "9999px",
+            background: PALETTE[4].hex,
+            opacity: 0.05,
+            filter: "blur(70px)",
+            animation: "blobDriftE 22s ease-in-out infinite",
+          }}
+        />
+      </div>
+
+      {/* Rising embers — a quiet nod to the flame/streak motif */}
+      <div aria-hidden="true" style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+        {Array.from({ length: 22 }).map((_, i) => {
+          const left = Math.round((i * 43) % 100);
+          const size = 2 + (i % 3);
+          const duration = 8 + (i % 6) * 2;
+          const delay = -(i * 1.7);
+          const drift = (i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 6);
+          const emberColor = i % 3 === 0 ? PALETTE[1].hex : PALETTE[0].hex;
+          return (
+            <span
+              key={i}
+              style={{
+                position: "absolute",
+                bottom: -10,
+                left: `${left}%`,
+                width: size,
+                height: size,
+                borderRadius: "9999px",
+                background: emberColor,
+                boxShadow: `0 0 6px ${emberColor}`,
+                "--drift": `${drift}px`,
+                animation: `emberRise ${duration}s linear ${delay}s infinite`,
+              }}
+            />
+          );
+        })}
+      </div>
+
+      <div className="relative pb-28">
+      {/* Header */}
+      <div
+        style={{
+          background: `linear-gradient(180deg, ${BG_CARD} 0%, transparent 100%)`,
+        }}
+        className="px-6 pt-14 pb-9"
+      >
+        <div className="flex items-start justify-between mb-5">
+          <div
+            style={{ background: "rgba(224,163,57,0.12)", border: `1px solid ${PALETTE[0].hex}`, animation: "floatY 3.2s ease-in-out infinite" }}
+            className="w-11 h-11 rounded-full flex items-center justify-center"
+          >
+            <Link2 size={19} color={PALETTE[0].hex} strokeWidth={2.2} />
+          </div>
+
+          <div className="text-left" dir="ltr">
+            <div
+              style={{
+                fontFamily: "'Fraunces', serif",
+                color: TEXT_MAIN,
+                fontVariantNumeric: "tabular-nums",
+                letterSpacing: "-0.01em",
+              }}
+              className="text-2xl font-semibold leading-none"
+            >
+              {formatTime(clockNow)}
+            </div>
+            <div
+              style={{ color: PALETTE[0].hex, fontFamily: "'IBM Plex Mono', monospace" }}
+              className="text-[10px] mt-1.5 uppercase tracking-wide"
+            >
+              {formatWeekday(clockNow)}
+            </div>
+            <div style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }} className="text-[10px]">
+              {formatDateShort(clockNow)}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 mb-2.5">
+          <div style={{ width: 16, height: 1, background: TEXT_MUTED, opacity: 0.5 }} />
+          <span
+            style={{ fontFamily: "'IBM Plex Mono', monospace", color: PALETTE[0].hex, letterSpacing: "0.16em" }}
+            className="text-[11px] uppercase"
+          >
+            יומן הרגלים
+          </span>
+        </div>
+
+        <h1
+          style={{
+            fontFamily: "'Fraunces', serif",
+            color: TEXT_MAIN,
+            letterSpacing: "-0.02em",
+            lineHeight: 1.05,
+          }}
+          className="text-[2.75rem] font-semibold"
+        >
+          אל תשבור
+          <br />
+          את ה
+          <span style={{ color: PALETTE[0].hex, fontStyle: "italic", fontWeight: 600 }}>שרשרת</span>
+        </h1>
+
+        {/* Decorative chain: rings fade from lit to dim, echoing a streak trailing off */}
+        <div className="flex items-center" style={{ marginTop: 20 }} aria-hidden="true">
+          {Array.from({ length: 12 }).map((_, i) => {
+            const vertical = i % 2 === 0;
+            const lit = i < 5;
+            return (
+              <div
+                key={i}
+                style={{
+                  width: vertical ? 13 : 22,
+                  height: vertical ? 22 : 13,
+                  border: `2.5px solid ${lit ? PALETTE[0].hex : BORDER}`,
+                  borderRadius: 9999,
+                  marginLeft: i === 0 ? 0 : -7,
+                  opacity: lit ? 1 : 0.7,
+                  flexShrink: 0,
+                }}
+              />
+            );
+          })}
+        </div>
+
+        <p style={{ color: TEXT_MUTED }} className="text-sm mt-4 leading-relaxed max-w-[32ch]">
+          יעד קטן, חוליה ביום, ובלי לשים לב כבר יש שרשרת שלמה.
+        </p>
+      </div>
+
+      {/* Top tab bar — segmented control with a sliding highlight */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+        }}
+        className="px-5 pt-3 pb-5"
+      >
+        <div
+          style={{
+            position: "relative",
+            background: "rgba(255,255,255,0.04)",
+            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.05)",
+            borderRadius: 9999,
+          }}
+          className="flex p-1"
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: 4,
+              bottom: 4,
+              width: `calc(100% / ${TAB_LIST.length} - 8px)`,
+              right: `calc(${TAB_LIST.findIndex((t) => t.id === tab)} * (100% / ${TAB_LIST.length}) + 4px)`,
+              background: `linear-gradient(155deg, #EDBA5E, ${PALETTE[0].hex})`,
+              borderRadius: 9999,
+              boxShadow: `0 4px 14px ${PALETTE[0].hex}66, inset 0 1px 0 rgba(255,255,255,0.25)`,
+              transition: "right 0.32s cubic-bezier(0.3,0.8,0.4,1)",
+            }}
+          />
+          {TAB_LIST.map(({ id, label, Icon }) => {
+            const active = tab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                style={{ color: active ? "#151F19" : TEXT_MUTED, position: "relative", zIndex: 1 }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors tap-3d"
+              >
+                <Icon size={14} strokeWidth={active ? 2.4 : 1.8} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {tab === "home" ? (
+        <>
+      {error && (
+        <div className="mx-5 mt-6 mb-4 px-3 py-2 rounded-md text-sm" style={{ background: "#3A2320", color: "#E39B8B" }}>
+          {error}
+        </div>
+      )}
+
+      {/* Habit list */}
+      <div className={`px-5 flex flex-col gap-4 ${error ? "" : "pt-6"}`}>
+        {activeHabits.length === 0 && !showAdd && (
+          <div
+            style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+            className="rounded-xl px-5 py-8 text-center"
+          >
+            <p style={{ color: TEXT_MUTED }} className="text-sm leading-relaxed">
+              {archivedHabits.length > 0 ? (
+                "כל ההרגלים הפעילים בארכיון."
+              ) : (
+                <>
+                  עדיין אין הרגלים במעקב.
+                  <br />
+                  הוסף הרגל ראשון כדי להתחיל לבנות שרשרת.
+                </>
+              )}
+            </p>
+          </div>
+        )}
+
+        {activeHabits.map((habit) => {
+          const streak = currentStreak(habit);
+          const longest = longestStreak(habit);
+          const doneToday = !!habit.completions[today];
+          const frozenToday = !!(habit.freezes && habit.freezes[today]);
+          const target = habit.target || 50;
+          const progress = Object.values(habit.completions).filter(Boolean).length;
+          const complete = progress >= target;
+          const rows = chunk(Array.from({ length: target }), 10);
+          const scheduleDays = (habit.schedule && habit.schedule.days && habit.schedule.days.length) ? habit.schedule.days : ALL_DAYS;
+          const isDaily = scheduleDays.length === 7;
+          const scheduleLabel = isDaily
+            ? null
+            : scheduleDays.map((d) => WEEKDAY_LETTERS[d]).join(" ");
+
+          return (
+            <div
+              key={habit.id}
+              style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+              className="rounded-xl px-4 pt-4 pb-3.5 card-in tap-3d"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "9999px",
+                      background: `${habit.color}22`,
+                      border: `1px solid ${habit.color}`,
+                      fontSize: 13,
+                    }}
+                    className="flex items-center justify-center flex-shrink-0"
+                  >
+                    {habit.emoji || "⭐"}
+                  </span>
+                  <span className="font-medium text-[15px] truncate">{habit.name}</span>
+                  {complete && <span style={{ fontSize: 13 }}>🏆</span>}
+                </div>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div
+                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: streak > 0 ? habit.color : TEXT_MUTED }}
+                    className="flex items-center gap-1 text-sm"
+                  >
+                    <Flame size={14} strokeWidth={2} style={{ opacity: streak > 0 ? 1 : 0.4 }} />
+                    {streak}
+                  </div>
+                  {confirmDelete === habit.id ? (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => deleteHabit(habit.id)}
+                        style={{ color: "#E39B8B" }}
+                        className="text-xs font-medium px-2 py-1 rounded"
+                      >
+                        מחק
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(null)}
+                        style={{ color: TEXT_MUTED }}
+                        className="text-xs px-2 py-1 rounded"
+                      >
+                        בטל
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {complete && (
+                        <button onClick={() => archiveHabit(habit.id)} style={{ color: TEXT_MUTED }} aria-label="העבר לארכיון">
+                          <Archive size={14} strokeWidth={1.8} />
+                        </button>
+                      )}
+                      <button onClick={() => openEditSheet(habit)} style={{ color: TEXT_MUTED }}>
+                        <Pencil size={14} strokeWidth={1.8} />
+                      </button>
+                      <button onClick={() => setConfirmDelete(habit.id)} style={{ color: TEXT_MUTED }}>
+                        <Trash2 size={15} strokeWidth={1.8} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {habit.purpose && (
+                <p
+                  style={{ color: TEXT_MUTED, fontStyle: "italic" }}
+                  className="text-xs leading-relaxed mb-2.5"
+                >
+                  {habit.purpose}
+                </p>
+              )}
+
+              <div
+                style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }}
+                className="text-xs mb-3"
+              >
+                {progress} מתוך {target}
+                {scheduleLabel && <span> · {scheduleLabel}</span>}
+              </div>
+
+              {/* Progress grid: one ring per goal count, filled in order of completion */}
+              <div className="flex flex-col gap-1.5">
+                {rows.map((row, rowIdx) => (
+                  <div key={rowIdx} className="flex items-center">
+                    {row.map((_, colIdx) => {
+                      const idx = rowIdx * 10 + colIdx;
+                      const filled = idx < progress;
+                      const prevFilled = colIdx > 0 && rowIdx * 10 + colIdx - 1 < progress;
+                      return (
+                        <div key={idx} className="flex items-center flex-shrink-0">
+                          {colIdx > 0 && (
+                            <div
+                              style={{
+                                width: 5,
+                                height: 2,
+                                background: filled && prevFilled ? habit.color : BORDER,
+                              }}
+                            />
+                          )}
+                          <div
+                            style={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: "9999px",
+                              background: filled ? habit.color : "transparent",
+                              border: filled ? "none" : `1px solid ${BORDER}`,
+                            }}
+                            className="flex-shrink-0"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between mt-3.5">
+                <span style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }} className="text-xs">
+                  שיא רצף: {longest} ימים
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {!doneToday && (
+                    <button
+                      onClick={() => toggleFreeze(habit.id)}
+                      title="יום חופש מתוכנן — לא שובר את הרצף, לא נספר להתקדמות"
+                      style={{
+                        background: frozenToday ? "rgba(91,132,168,0.15)" : "transparent",
+                        color: frozenToday ? PALETTE[3].hex : TEXT_MUTED,
+                        border: `1px solid ${frozenToday ? PALETTE[3].hex : BORDER}`,
+                      }}
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors tap-3d flex items-center gap-1"
+                    >
+                      ❄️ {frozenToday ? "יום חופש" : ""}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => toggleToday(habit.id)}
+                    style={{
+                      background: doneToday ? "transparent" : habit.color,
+                      color: doneToday ? TEXT_MUTED : "#151F19",
+                      border: doneToday ? `1px solid ${BORDER}` : "none",
+                    }}
+                    className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors tap-3d"
+                  >
+                    {doneToday ? "בוצע היום ✓" : "סמן להיום"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Archive */}
+      {archivedHabits.length > 0 && (
+        <div className="px-5 mt-6">
+          <button
+            onClick={() => setShowArchive((v) => !v)}
+            style={{ color: TEXT_MUTED }}
+            className="flex items-center gap-1.5 text-xs w-full"
+          >
+            {showArchive ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            ארכיון · {archivedHabits.length} הרגלים
+          </button>
+
+          {showArchive && (
+            <div className="flex flex-col gap-2 mt-3">
+              {archivedHabits.map((habit) => {
+                const target = habit.target || 50;
+                const progress = Object.values(habit.completions).filter(Boolean).length;
+                return (
+                  <div
+                    key={habit.id}
+                    style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+                    className="rounded-xl px-4 py-3 flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        style={{ background: habit.color, opacity: 0.6 }}
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <div style={{ color: TEXT_MUTED }} className="text-sm truncate">
+                          {habit.name}
+                        </div>
+                        <div
+                          style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }}
+                          className="text-[11px]"
+                        >
+                          🏆 {progress}/{target}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {confirmDelete === habit.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => deleteHabit(habit.id)}
+                            style={{ color: "#E39B8B" }}
+                            className="text-xs font-medium px-2 py-1 rounded"
+                          >
+                            מחק
+                          </button>
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            style={{ color: TEXT_MUTED }}
+                            className="text-xs px-2 py-1 rounded"
+                          >
+                            בטל
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => restoreHabit(habit.id)}
+                            style={{ color: TEXT_MUTED }}
+                            aria-label="שחזר מהארכיון"
+                          >
+                            <ArchiveRestore size={15} strokeWidth={1.8} />
+                          </button>
+                          <button onClick={() => setConfirmDelete(habit.id)} style={{ color: TEXT_MUTED }}>
+                            <Trash2 size={15} strokeWidth={1.8} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add / edit habit sheet */}
+      {showAdd && (
+        <div className="px-5 mt-4">
+          <div style={{ background: BG_CARD, border: `1px solid ${BORDER}` }} className="rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span style={{ fontFamily: "'Fraunces', serif" }} className="text-lg font-semibold">
+                {editingId ? "עריכת הרגל" : "הרגל חדש"}
+              </span>
+              <button onClick={resetForm} style={{ color: TEXT_MUTED }}>
+                <X size={18} />
+              </button>
+            </div>
+            <input
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submitHabitForm()}
+              placeholder="לדוגמה: קריאה 20 דקות"
+              style={{
+                background: BG_CELL,
+                border: `1px solid ${BORDER}`,
+                color: TEXT_MAIN,
+              }}
+              className="w-full rounded-lg px-3 py-2.5 text-sm outline-none mb-3"
+            />
+
+            <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+              אימוג׳י
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(true)}
+              style={{ background: BG_CELL, border: `1px solid ${BORDER}` }}
+              className="w-full rounded-lg px-3 py-2.5 mb-4 flex items-center gap-3 tap-3d"
+            >
+              <span
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "9999px",
+                  background: `${newColor}22`,
+                  border: `1px solid ${newColor}`,
+                  fontSize: 17,
+                }}
+                className="flex items-center justify-center flex-shrink-0"
+              >
+                {newEmoji}
+              </span>
+              <span style={{ color: TEXT_MAIN }} className="text-sm flex-1 text-right">
+                בחר אימוג׳י
+              </span>
+              <ChevronDown size={15} strokeWidth={1.8} color={TEXT_MUTED} style={{ transform: "rotate(-90deg)" }} />
+            </button>
+
+            <textarea
+              value={newPurpose}
+              onChange={(e) => setNewPurpose(e.target.value)}
+              placeholder="למה זה חשוב לך? (לא חובה) — לדוגמה: להרגיש יותר ערני בבוקר"
+              rows={2}
+              style={{
+                background: BG_CELL,
+                border: `1px solid ${BORDER}`,
+                color: TEXT_MAIN,
+                resize: "none",
+              }}
+              className="w-full rounded-lg px-3 py-2.5 text-sm outline-none mb-4 leading-relaxed"
+            />
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              {PALETTE.map((c) => (
+                <button
+                  key={c.hex}
+                  onClick={() => setNewColor(c.hex)}
+                  style={{
+                    background: c.hex,
+                    width: 26,
+                    height: 26,
+                    borderRadius: "9999px",
+                    border: newColor === c.hex ? `2px solid ${TEXT_MAIN}` : "2px solid transparent",
+                  }}
+                  aria-label={c.name}
+                />
+              ))}
+
+              <div
+                style={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: "9999px",
+                  background:
+                    "conic-gradient(from 0deg, #E0A339, #C9A227, #5C9A6E, #5B84A8, #BD5B37, #E0A339)",
+                  border: isCustomColor ? `2px solid ${TEXT_MAIN}` : "2px solid transparent",
+                  position: "relative",
+                  overflow: "hidden",
+                  flexShrink: 0,
+                }}
+                aria-label="צבע מותאם אישית"
+              >
+                <input
+                  type="color"
+                  value={/^#[0-9a-fA-F]{6}$/.test(newColor) ? newColor : "#E0A339"}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    opacity: 0,
+                    cursor: "pointer",
+                    border: 0,
+                    padding: 0,
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+              באילו ימים
+            </div>
+            <div className="flex items-center gap-1.5 mb-4">
+              <button
+                onClick={() => setNewScheduleDays(ALL_DAYS)}
+                style={{
+                  background: newScheduleDays.length === 7 ? newColor : "transparent",
+                  color: newScheduleDays.length === 7 ? "#151F19" : TEXT_MUTED,
+                  border: `1px solid ${newScheduleDays.length === 7 ? newColor : BORDER}`,
+                }}
+                className="text-xs font-medium px-2.5 py-1.5 rounded-full flex-shrink-0"
+              >
+                כל יום
+              </button>
+              {WEEKDAY_LETTERS.map((letter, day) => {
+                const active = newScheduleDays.includes(day);
+                return (
+                  <button
+                    key={day}
+                    onClick={() => toggleScheduleDay(day)}
+                    style={{
+                      background: active ? newColor : "transparent",
+                      color: active ? "#151F19" : TEXT_MUTED,
+                      border: `1px solid ${active ? newColor : BORDER}`,
+                    }}
+                    className="w-8 h-8 rounded-full text-xs font-medium flex-shrink-0 tap-3d"
+                  >
+                    {letter}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+              יעד — כמה פעמים רוצים לעשות את זה
+            </div>
+            <div className="flex items-center gap-2 mb-3">
+              {[25, 50, 75, 100].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setNewTarget(n)}
+                  style={{
+                    background: newTarget === n ? newColor : "transparent",
+                    color: newTarget === n ? "#151F19" : TEXT_MUTED,
+                    border: `1px solid ${newTarget === n ? newColor : BORDER}`,
+                  }}
+                  className="text-xs font-medium px-3 py-1.5 rounded-full"
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+              או מספר מותאם אישית (1–100)
+            </div>
+            <div className="flex items-center gap-2 mb-3">
+              <button
+                onClick={() => setNewTarget((t) => Math.max(1, t - 1))}
+                style={{ background: BG_CELL, border: `1px solid ${BORDER}`, color: TEXT_MAIN }}
+                className="w-9 h-9 rounded-full text-lg leading-none flex-shrink-0"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={100}
+                value={newTarget}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setNewTarget("");
+                    return;
+                  }
+                  const v = Number(raw);
+                  if (Number.isNaN(v)) return;
+                  setNewTarget(Math.min(100, Math.max(1, v)));
+                }}
+                onBlur={() => {
+                  if (newTarget === "" || Number.isNaN(Number(newTarget))) setNewTarget(50);
+                }}
+                style={{
+                  background: BG_CELL,
+                  border: `1px solid ${PALETTE[0].hex}`,
+                  color: TEXT_MAIN,
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
+                className="flex-1 rounded-lg px-3 py-2 text-base text-center outline-none"
+              />
+              <button
+                onClick={() => setNewTarget((t) => Math.min(100, (Number(t) || 0) + 1))}
+                style={{ background: BG_CELL, border: `1px solid ${BORDER}`, color: TEXT_MAIN }}
+                className="w-9 h-9 rounded-full text-lg leading-none flex-shrink-0"
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              onClick={submitHabitForm}
+              style={{ background: newColor, color: "#151F19" }}
+              className="w-full rounded-lg py-2.5 text-sm font-medium mt-1 tap-3d"
+            >
+              {editingId ? "שמור שינויים" : "הוסף הרגל"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating add button */}
+      {!showAdd && (
+        <button
+          onClick={openAddSheet}
+          style={{ background: PALETTE[0].hex, color: "#151F19" }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full shadow-lg px-5 py-3 flex items-center gap-2 text-sm font-medium z-10 tap-3d"
+        >
+          <Plus size={16} strokeWidth={2.5} />
+          הרגל חדש
+        </button>
+      )}
+      </>
+      ) : tab === "stats" ? (
+        <div className="px-5 pt-6">
+          <h2
+            style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }}
+            className="text-2xl font-semibold mb-5"
+          >
+            סטטיסטיקות
+          </h2>
+
+          {habits.length === 0 ? (
+            <div
+              style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+              className="rounded-xl px-5 py-8 text-center"
+            >
+              <p style={{ color: TEXT_MUTED }} className="text-sm leading-relaxed">
+                עדיין אין נתונים להציג. הוסיפו הרגל ראשון כדי להתחיל.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Stat cards */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {[
+                  { label: "סימונים בסה״כ", value: totalCheckins },
+                  { label: "שיא רצף פעיל", value: bestCurrentStreak, icon: true },
+                  { label: "יעדים שהושלמו", value: totalGoalsCompleted, trophy: true },
+                  { label: "הרגלים פעילים", value: activeHabits.length },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+                    className="rounded-xl px-4 py-4"
+                  >
+                    <div
+                      style={{ fontFamily: "'Fraunces', serif", color: PALETTE[0].hex }}
+                      className="text-3xl font-semibold flex items-center gap-1.5"
+                    >
+                      {stat.icon && <Flame size={18} strokeWidth={2} />}
+                      {stat.trophy && <span style={{ fontSize: 20 }}>🏆</span>}
+                      {stat.value}
+                    </div>
+                    <div style={{ color: TEXT_MUTED }} className="text-xs mt-1">
+                      {stat.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Today snapshot */}
+              <div
+                style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+                className="rounded-xl px-4 py-4 mb-4"
+              >
+                <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+                  היום
+                </div>
+                <div className="flex items-end justify-between mb-2">
+                  <div style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }} className="text-2xl font-semibold">
+                    {doneTodayCount} <span style={{ color: TEXT_MUTED, fontSize: 15 }}>מתוך {activeHabits.length} בוצעו</span>
+                  </div>
+                  {habitsCreatedToday > 0 && (
+                    <div style={{ color: PALETTE[1].hex, fontFamily: "'IBM Plex Mono', monospace" }} className="text-xs">
+                      +{habitsCreatedToday} הרגלים חדשים
+                    </div>
+                  )}
+                </div>
+                <div style={{ background: BORDER, height: 6, borderRadius: 9999 }}>
+                  <div
+                    style={{
+                      width: `${activeHabits.length ? Math.round((doneTodayCount / activeHabits.length) * 100) : 0}%`,
+                      height: 6,
+                      background: PALETTE[0].hex,
+                      borderRadius: 9999,
+                      transition: "width 0.3s ease",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Weekly activity */}
+              <div
+                style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+                className="rounded-xl px-4 pt-4 pb-3 mb-6"
+              >
+                <div style={{ color: TEXT_MUTED }} className="text-xs mb-3">
+                  פעילות השבוע האחרון
+                </div>
+                <div className="flex items-end justify-between gap-2" style={{ height: 88 }}>
+                  {weekDays.map((d, i) => {
+                    const count = weekCounts[i];
+                    const heightPct = Math.round((count / weekMax) * 100);
+                    const barHeightPx = Math.max(4, Math.round((heightPct / 100) * 64));
+                    const isToday = d === today;
+                    return (
+                      <div key={d} className="flex flex-col items-center justify-end gap-1.5 flex-1" style={{ height: "100%" }}>
+                        <div
+                          style={{
+                            width: "100%",
+                            maxWidth: 22,
+                            height: barHeightPx,
+                            background: isToday ? PALETTE[0].hex : BORDER,
+                            borderRadius: 4,
+                            flexShrink: 0,
+                          }}
+                        />
+                        <div
+                          style={{
+                            color: isToday ? PALETTE[0].hex : TEXT_MUTED,
+                            fontFamily: "'IBM Plex Mono', monospace",
+                          }}
+                          className="text-[10px]"
+                        >
+                          {weekdayLetter(d)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Ranked habits */}
+              <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+                לפי אחוז השלמת יעד
+              </div>
+              <div className="flex flex-col gap-2">
+                {rankedHabits.map((habit) => {
+                  const pct = Math.min(100, Math.round((habit.progress / habit.target) * 100));
+                  return (
+                    <div
+                      key={habit.id}
+                      style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+                      className="rounded-xl px-4 py-3"
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            style={{ background: habit.color }}
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                          />
+                          <span className="text-sm truncate">{habit.name}</span>
+                          {habit.archived && (
+                            <span style={{ color: TEXT_MUTED }} className="text-[10px]">
+                              (בארכיון)
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }}
+                          className="text-xs flex-shrink-0"
+                        >
+                          {habit.progress}/{habit.target}
+                        </span>
+                      </div>
+                      <div style={{ background: BORDER, height: 5, borderRadius: 9999 }}>
+                        <div
+                          style={{
+                            width: `${pct}%`,
+                            height: 5,
+                            background: habit.color,
+                            borderRadius: 9999,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      ) : tab === "achievements" ? (
+        <div className="px-5 pt-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }} className="text-2xl font-semibold">
+              הישגים
+            </h2>
+            <span
+              style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }}
+              className="text-xs"
+            >
+              {unlockedBadgeCount} / {BADGES.length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {BADGES.map((badge) => {
+              const unlocked = badge.check(badgeStats);
+              const pct = Math.round(badge.progress(badgeStats) * 100);
+              return (
+                <div
+                  key={badge.id}
+                  style={{
+                    background: BG_CARD,
+                    border: `1px solid ${unlocked ? PALETTE[0].hex : BORDER}`,
+                    opacity: unlocked ? 1 : 0.75,
+                  }}
+                  className="rounded-xl px-4 py-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span style={{ fontSize: 26, filter: unlocked ? "none" : "grayscale(1)" }}>
+                      {badge.emoji}
+                    </span>
+                    {!unlocked && <Lock size={13} strokeWidth={1.8} color={TEXT_MUTED} />}
+                  </div>
+                  <div
+                    style={{ color: unlocked ? TEXT_MAIN : TEXT_MUTED, fontFamily: "'Fraunces', serif" }}
+                    className="text-sm font-semibold mb-1"
+                  >
+                    {badge.label}
+                  </div>
+                  <div style={{ color: TEXT_MUTED }} className="text-[11px] leading-relaxed mb-2.5">
+                    {badge.desc}
+                  </div>
+                  {!unlocked && (
+                    <div style={{ background: BORDER, height: 4, borderRadius: 9999 }}>
+                      <div
+                        style={{
+                          width: `${pct}%`,
+                          height: 4,
+                          background: PALETTE[0].hex,
+                          borderRadius: 9999,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className="px-5 pt-6">
+          <h2
+            style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }}
+            className="text-2xl font-semibold mb-5"
+          >
+            הגדרות
+          </h2>
+
+          <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+            ניהול נתונים
+          </div>
+          <div className="flex flex-col gap-2 mb-6">
+            <button
+              onClick={exportHabits}
+              style={{ background: BG_CARD, border: `1px solid ${BORDER}`, color: TEXT_MAIN }}
+              className="rounded-xl px-4 py-3 text-sm flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                {exportFeedback ? (
+                  <Check size={16} strokeWidth={2} color={PALETTE[1].hex} />
+                ) : (
+                  <Download size={16} strokeWidth={1.8} />
+                )}
+                {exportFeedback ? "ההורדה החלה!" : "ייצוא נתונים (קובץ להורדה)"}
+              </span>
+              <span style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }} className="text-xs">
+                {habits.length}
+              </span>
+            </button>
+
+            {confirmReset ? (
+              <div
+                style={{ background: BG_CARD, border: `1px solid #7A3B32` }}
+                className="rounded-xl px-4 py-3"
+              >
+                <div style={{ color: "#E39B8B" }} className="text-sm mb-3">
+                  זה ימחק את כל ההרגלים וההיסטוריה לצמיתות. בטוחים?
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      persist([]);
+                      setConfirmReset(false);
+                    }}
+                    style={{ background: "#7A3B32", color: TEXT_MAIN }}
+                    className="text-xs font-medium px-3 py-1.5 rounded-full"
+                  >
+                    כן, מחק הכל
+                  </button>
+                  <button
+                    onClick={() => setConfirmReset(false)}
+                    style={{ color: TEXT_MUTED }}
+                    className="text-xs px-3 py-1.5"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmReset(true)}
+                style={{ background: BG_CARD, border: `1px solid ${BORDER}`, color: "#E39B8B" }}
+                className="rounded-xl px-4 py-3 text-sm flex items-center gap-2"
+              >
+                <RotateCcw size={16} strokeWidth={1.8} />
+                איפוס כל הנתונים
+              </button>
+            )}
+          </div>
+
+          <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+            אודות
+          </div>
+          <div
+            style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
+            className="rounded-xl px-4 py-3"
+          >
+            <div style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }} className="text-sm font-semibold mb-1">
+              אל תשבור את השרשרת
+            </div>
+            <p style={{ color: TEXT_MUTED }} className="text-xs leading-relaxed">
+              יומן הרגלים אישי. הנתונים נשמרים במכשיר שלכם בלבד.
+            </p>
+          </div>
+        </div>
+      )}
+      </div>
+
+      {/* Emoji picker */}
+      {showEmojiPicker && (
+        <div
+          onClick={() => setShowEmojiPicker(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(9,14,11,0.75)", zIndex: 60 }}
+          className="flex items-end justify-center"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: BG_CARD,
+              borderTop: `1px solid ${BORDER}`,
+              maxHeight: "80vh",
+            }}
+            className="w-full rounded-t-2xl px-5 pt-4 pb-6 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-3 flex-shrink-0">
+              <span style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }} className="text-lg font-semibold">
+                בחר אימוג׳י
+              </span>
+              <button onClick={() => setShowEmojiPicker(false)} style={{ color: TEXT_MUTED }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <input
+              value={newEmoji}
+              onChange={(e) => {
+                const chars = Array.from(e.target.value);
+                setNewEmoji(chars.length ? chars[chars.length - 1] : "");
+              }}
+              placeholder="או הקלידו כל אימוג׳י אחר מהמקלדת שלכם"
+              style={{ background: BG_CELL, border: `1px solid ${BORDER}`, color: TEXT_MAIN }}
+              className="w-full rounded-lg px-3 py-2.5 text-sm outline-none mb-4 flex-shrink-0 text-center"
+            />
+
+            <div style={{ overflowY: "auto" }} className="flex-1">
+              {EMOJI_CATEGORIES.map((cat) => (
+                <div key={cat.title} className="mb-4">
+                  <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+                    {cat.title}
+                  </div>
+                  <div className="grid grid-cols-8 gap-1.5">
+                    {cat.items.map((e) => (
+                      <button
+                        key={e}
+                        onClick={() => {
+                          setNewEmoji(e);
+                          setShowEmojiPicker(false);
+                        }}
+                        style={{
+                          background: newEmoji === e ? "rgba(224,163,57,0.15)" : "transparent",
+                          border: `1px solid ${newEmoji === e ? PALETTE[0].hex : "transparent"}`,
+                        }}
+                        className="rounded-lg py-1.5 text-lg flex items-center justify-center tap-3d"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goal-reached celebration */}
+      {celebrateHabit && (
+        <div
+          onClick={() => setCelebrateHabit(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(9,14,11,0.72)",
+            zIndex: 50,
+            animation: "overlayFade 0.2s ease-out",
+          }}
+          className="flex items-center justify-center px-6"
+        >
+          <div style={{ position: "absolute", inset: 0, overflow: "hidden" }} aria-hidden="true">
+            {Array.from({ length: 26 }).map((_, i) => {
+              const left = Math.round((i * 137.5) % 100);
+              const color = PALETTE[i % PALETTE.length].hex;
+              const duration = (1.8 + ((i * 37) % 140) / 100).toFixed(2);
+              const delay = (((i * 53) % 60) / 100).toFixed(2);
+              const size = 6 + (i % 4) * 2;
+              return (
+                <span
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    top: -24,
+                    left: `${left}%`,
+                    width: size,
+                    height: size * 1.6,
+                    background: color,
+                    borderRadius: 2,
+                    animation: `confettiFall ${duration}s ease-in ${delay}s forwards`,
+                  }}
+                />
+              );
+            })}
+          </div>
+
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: BG_CARD,
+              border: `1px solid ${celebrateHabit.color}`,
+              boxShadow: `0 0 48px ${celebrateHabit.color}40`,
+              animation: "popIn 0.35s cubic-bezier(0.2,0.9,0.3,1.3)",
+            }}
+            className="rounded-2xl px-6 py-8 text-center max-w-xs w-full relative"
+          >
+            <div style={{ fontSize: 42 }} className="mb-3">
+              🏆
+            </div>
+            <div
+              style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }}
+              className="text-xl font-semibold mb-1.5"
+            >
+              היעד הושלם!
+            </div>
+            <div style={{ color: celebrateHabit.color, fontFamily: "'IBM Plex Mono', monospace" }} className="text-sm mb-5">
+              {celebrateHabit.name} · {celebrateHabit.target}/{celebrateHabit.target}
+            </div>
+            <button
+              onClick={() => setCelebrateHabit(null)}
+              style={{ background: celebrateHabit.color, color: "#151F19" }}
+              className="rounded-full px-6 py-2 text-sm font-medium tap-3d"
+            >
+              יש!
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+try {
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(<HabitTracker />);
+} catch (e) {
+  document.getElementById("boot-status").textContent = "משהו נכשל בהרצה:\n" + e.message;
+}
+</script>
+</body>
+</html>
