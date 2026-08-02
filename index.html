@@ -119,6 +119,11 @@ const Download = makeIcon("Download");
 const Check = makeIcon("Check");
 const RotateCcw = makeIcon("RotateCcw");
 
+
+ICON_PATHS.Award = '<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>';
+ICON_PATHS.Lock = '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+const Award = makeIcon("Award");
+const Lock = makeIcon("Lock");
 // Local storage shim matching the {get,set} shape the component expects.
 const storage = {
   async get(key) {
@@ -148,6 +153,54 @@ const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Fraun
 @keyframes overlayFade {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+@keyframes blobDriftA {
+  0%, 100% { transform: translate(-6%, -8%) scale(1); }
+  50% { transform: translate(8%, 6%) scale(1.15); }
+}
+@keyframes blobDriftB {
+  0%, 100% { transform: translate(6%, -4%) scale(1.05); }
+  50% { transform: translate(-8%, 8%) scale(0.92); }
+}
+@keyframes blobDriftC {
+  0%, 100% { transform: translate(0%, 10%) scale(0.95); }
+  50% { transform: translate(4%, -10%) scale(1.1); }
+}
+@keyframes blobDriftD {
+  0%, 100% { transform: translate(-8%, 4%) scale(1); }
+  50% { transform: translate(10%, -6%) scale(1.12); }
+}
+@keyframes blobDriftE {
+  0%, 100% { transform: translate(4%, 8%) scale(0.9); }
+  50% { transform: translate(-10%, -4%) scale(1.08); }
+}
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+@keyframes emberRise {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-70vh) translateX(var(--drift, 12px)); opacity: 0; }
+}
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes cardIn {
+  0% { opacity: 0; transform: translateY(10px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.tap-3d {
+  transition: transform 0.15s cubic-bezier(0.3,0.8,0.4,1), box-shadow 0.15s ease;
+  transform-style: preserve-3d;
+}
+.tap-3d:active {
+  transform: perspective(400px) scale(0.96) rotateX(3deg);
+}
+.card-in {
+  animation: cardIn 0.4s cubic-bezier(0.2,0.8,0.3,1) both;
 }`;
 
 const PALETTE = [
@@ -159,10 +212,106 @@ const PALETTE = [
   { name: "אוכר", hex: "#A8763E" },
 ];
 
+// Index matches JS Date.getDay(): 0=Sunday ... 6=Saturday
+const WEEKDAY_LETTERS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
+
+const EMOJI_CATEGORIES = [
+  {
+    title: "פעילות וספורט",
+    items: ["🏃", "🚴", "🏊", "🏋️", "🧘", "🤸", "🥊", "⚽", "🏀", "🎾", "🚶", "🧗", "🏂", "⛷️", "🏄", "🤾", "🚣", "🥋", "🧎", "💪"],
+  },
+  {
+    title: "אוכל ושתייה",
+    items: ["💧", "☕", "🍵", "🥗", "🍎", "🍌", "🥦", "🥕", "🍚", "🍞", "🥛", "🍇", "🍓", "🥑", "🍳", "🍲", "🍫", "🍩", "🍺", "🚭"],
+  },
+  {
+    title: "מוח ולמידה",
+    items: ["📖", "📚", "📝", "✍️", "🎨", "🎵", "🎸", "🎹", "🧠", "💡", "🧩", "🔬", "🖋️", "📐", "🌐", "💻", "📊", "🗣️", "👂", "🎧"],
+  },
+  {
+    title: "טבע ובית",
+    items: ["🌱", "🌳", "🌸", "🌞", "🌙", "⭐", "🔥", "🧹", "🧺", "🛏️", "🧴", "🪴", "🐶", "🐱", "🌈", "❄️", "🍃", "🏡", "🧽", "🪟"],
+  },
+  {
+    title: "עבודה וכסף",
+    items: ["💰", "💳", "📈", "📅", "⏰", "✅", "🗂️", "📌", "💼", "🧾", "🎯", "🚀", "🏆", "🔧", "📦", "🖊️", "🗓️", "⏳", "🧮", "🖥️"],
+  },
+  {
+    title: "רגשות וסמלים",
+    items: ["❤️", "🙏", "😊", "😴", "🎉", "🙌", "👏", "✨", "🌟", "🕊️", "☀️", "🌧️", "🌤️", "🔔", "🎁", "🏅", "🥇", "🔑", "🥋", "🧘‍♂️"],
+  },
+];
+
+const EMOJI_OPTIONS = EMOJI_CATEGORIES.flatMap((c) => c.items);
+
 const TAB_LIST = [
   { id: "home", label: "בית", Icon: Home },
-  { id: "stats", label: "סטטיסטיקות", Icon: BarChart3 },
+  { id: "stats", label: "נתונים", Icon: BarChart3 },
+  { id: "achievements", label: "הישגים", Icon: Award },
   { id: "settings", label: "הגדרות", Icon: Settings },
+];
+
+function tierBadges(prefix, tiers, emojis, statKey, labelFn, descFn) {
+  return tiers.map((t, i) => ({
+    id: `${prefix}_${t}`,
+    emoji: emojis[i],
+    label: labelFn(t),
+    desc: descFn(t),
+    check: (s) => s[statKey] >= t,
+    progress: (s) => Math.min(1, s[statKey] / t),
+  }));
+}
+
+const BADGES = [
+  ...tierBadges(
+    "streak",
+    [1, 3, 7, 14, 21, 30, 45, 60, 66, 75, 90, 100],
+    ["🌱", "✨", "🔥", "🔥", "🌙", "🌙", "⚡", "⚡", "🧠", "🚀", "💪", "💯"],
+    "bestEverStreak",
+    (t) => `רצף ${t} ימים`,
+    (t) => `רצף רציף של ${t} ימים בהרגל אחד`
+  ),
+  ...tierBadges(
+    "goals",
+    [1, 2, 3, 5, 7, 10, 15, 20, 25, 30, 40, 50],
+    ["🏆", "🎖️", "🥉", "🥈", "🥇", "👑", "🏅", "💎", "🌟", "🎯", "🚩", "🛡️"],
+    "goalsCompleted",
+    (t) => (t === 1 ? "יעד ראשון" : `${t} יעדים שהושלמו`),
+    (t) => `השלמת ${t} יעד${t === 1 ? "" : "ים"} בסך הכל`
+  ),
+  ...tierBadges(
+    "checkins",
+    [10, 25, 50, 75, 100, 150, 200, 250, 300, 365, 500, 730],
+    ["📘", "📗", "📙", "📕", "📓", "📔", "📚", "🗓️", "📅", "📆", "🗃️", "🏛️"],
+    "totalCheckins",
+    (t) => `${t} סימונים`,
+    (t) => `${t} סימוני "בוצע" בסך הכל`
+  ),
+  ...tierBadges(
+    "active",
+    [1, 2, 3, 5, 7, 10],
+    ["🎯", "🧩", "🧩", "🎪", "🎪", "🎡"],
+    "activeCount",
+    (t) => (t === 1 ? "הרגל ראשון" : `${t} הרגלים במקביל`),
+    (t) => `${t} הרגלים פעילים בו-זמנית`
+  ),
+  ...tierBadges(
+    "archive",
+    [1, 2, 3, 5],
+    ["📦", "📦", "🗄️", "🗄️"],
+    "archivedCount",
+    (t) => (t === 1 ? "לארכיון" : `${t} בארכיון`),
+    (t) => `${t} הרגלים הועברו לארכיון`
+  ),
+  ...tierBadges(
+    "created",
+    [1, 3, 5, 10],
+    ["🌱", "🌿", "🌳", "🌲"],
+    "habitCount",
+    (t) => `${t} הרגלים נוצרו`,
+    (t) => `יצרת בסך הכל ${t} הרגלים`
+  ),
 ];
 
 const BG = "#152018";
@@ -219,30 +368,52 @@ function weekdayLetter(dateStr) {
   return new Intl.DateTimeFormat("he-IL", { weekday: "narrow" }).format(dateFromStr(dateStr));
 }
 
-function currentStreak(completions) {
+function daysBetween(a, b) {
+  return Math.round((dateFromStr(b) - dateFromStr(a)) / (1000 * 60 * 60 * 24));
+}
+
+function isScheduledDay(habit, dateStr) {
+  const days = habit.schedule && habit.schedule.days;
+  if (!days || days.length === 0 || days.length === 7) return true;
+  return days.includes(dateFromStr(dateStr).getDay());
+}
+
+function currentStreak(habit) {
+  const completions = habit.completions || {};
+  const freezes = habit.freezes || {};
   let streak = 0;
   let i = 0;
-  while (completions[dateStrDaysAgo(i)]) {
-    streak++;
-    i++;
+  while (true) {
+    const d = dateStrDaysAgo(i);
+    if (!isScheduledDay(habit, d)) {
+      i++;
+      continue;
+    }
+    if (completions[d] || freezes[d]) {
+      streak++;
+      i++;
+    } else {
+      break;
+    }
   }
   return streak;
 }
 
-function longestStreak(completions) {
-  const dates = Object.keys(completions).filter((d) => completions[d]).sort();
-  if (dates.length === 0) return 0;
-  let longest = 1;
-  let run = 1;
-  for (let i = 1; i < dates.length; i++) {
-    const prev = new Date(dates[i - 1]);
-    const cur = new Date(dates[i]);
-    const diffDays = Math.round((cur - prev) / (1000 * 60 * 60 * 24));
-    if (diffDays === 1) {
+function longestStreak(habit) {
+  const completions = habit.completions || {};
+  const freezes = habit.freezes || {};
+  const created = habit.createdAt || todayStr();
+  const span = Math.max(0, daysBetween(created, todayStr()));
+  let longest = 0;
+  let run = 0;
+  for (let i = span; i >= 0; i--) {
+    const d = dateStrDaysAgo(i);
+    if (!isScheduledDay(habit, d)) continue;
+    if (completions[d] || freezes[d]) {
       run++;
-      longest = Math.max(longest, run);
+      if (run > longest) longest = run;
     } else {
-      run = 1;
+      run = 0;
     }
   }
   return longest;
@@ -256,6 +427,10 @@ function HabitTracker() {
   const [newName, setNewName] = useState("");
   const [newColor, setNewColor] = useState(PALETTE[0].hex);
   const [newTarget, setNewTarget] = useState(50);
+  const [newPurpose, setNewPurpose] = useState("");
+  const [newEmoji, setNewEmoji] = useState(EMOJI_OPTIONS[0]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [newScheduleDays, setNewScheduleDays] = useState(ALL_DAYS);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [celebrateHabit, setCelebrateHabit] = useState(null);
   const [showArchive, setShowArchive] = useState(false);
@@ -313,8 +488,12 @@ function HabitTracker() {
     setNewName("");
     setNewColor(PALETTE[0].hex);
     setNewTarget(50);
+    setNewPurpose("");
+    setNewEmoji(EMOJI_OPTIONS[0]);
+    setNewScheduleDays(ALL_DAYS);
     setEditingId(null);
     setShowAdd(false);
+    setShowEmojiPicker(false);
   }
 
   function openAddSheet() {
@@ -322,6 +501,9 @@ function HabitTracker() {
     setNewName("");
     setNewColor(PALETTE[0].hex);
     setNewTarget(50);
+    setNewPurpose("");
+    setNewEmoji(EMOJI_OPTIONS[0]);
+    setNewScheduleDays(ALL_DAYS);
     setShowAdd(true);
   }
 
@@ -330,17 +512,37 @@ function HabitTracker() {
     setNewName(habit.name);
     setNewColor(habit.color);
     setNewTarget(habit.target || 50);
+    setNewPurpose(habit.purpose || "");
+    setNewEmoji(habit.emoji || EMOJI_OPTIONS[0]);
+    setNewScheduleDays((habit.schedule && habit.schedule.days && habit.schedule.days.length) ? habit.schedule.days : ALL_DAYS);
     setShowAdd(true);
+  }
+
+  function toggleScheduleDay(day) {
+    setNewScheduleDays((prev) => {
+      if (prev.length === 7) {
+        // Currently "every day" — tapping a specific day starts a fresh custom selection
+        // with just that day, instead of merely removing it from the full week.
+        return [day];
+      }
+      if (prev.includes(day)) {
+        const next = prev.filter((d) => d !== day);
+        return next.length === 0 ? prev : next; // keep at least one day selected
+      }
+      return [...prev, day].sort();
+    });
   }
 
   function submitHabitForm() {
     const name = newName.trim();
     if (!name) return;
     const target = Number(newTarget) || 50;
+    const purpose = newPurpose.trim();
+    const schedule = { days: [...newScheduleDays].sort() };
 
     if (editingId) {
       const next = habits.map((h) =>
-        h.id === editingId ? { ...h, name, color: newColor, target } : h
+        h.id === editingId ? { ...h, name, color: newColor, target, purpose, emoji: newEmoji, schedule } : h
       );
       persist(next);
     } else {
@@ -349,8 +551,12 @@ function HabitTracker() {
         name,
         color: newColor,
         target,
+        purpose,
+        emoji: newEmoji,
+        schedule,
         createdAt: today,
         completions: {},
+        freezes: {},
       };
       persist([...(habits || []), habit]);
     }
@@ -368,12 +574,26 @@ function HabitTracker() {
     const newProgress = Object.values(completions).filter(Boolean).length;
     const target = habit.target || 50;
 
-    const next = habits.map((h) => (h.id === habitId ? { ...h, completions } : h));
+    // Marking a day complete cancels any "day off" freeze on that same day.
+    const freezes = { ...(habit.freezes || {}) };
+    if (!wasFilled) delete freezes[today];
+
+    const next = habits.map((h) => (h.id === habitId ? { ...h, completions, freezes } : h));
     persist(next);
 
     if (!wasFilled && prevProgress < target && newProgress >= target) {
       setCelebrateHabit({ name: habit.name, color: habit.color, target });
     }
+  }
+
+  function toggleFreeze(habitId) {
+    const habit = habits.find((h) => h.id === habitId);
+    if (!habit) return;
+    if (habit.completions[today]) return; // can't freeze an already-completed day
+    const freezes = { ...(habit.freezes || {}) };
+    if (freezes[today]) delete freezes[today];
+    else freezes[today] = true;
+    persist(habits.map((h) => (h.id === habitId ? { ...h, freezes } : h)));
   }
 
   function deleteHabit(habitId) {
@@ -431,7 +651,17 @@ function HabitTracker() {
   const totalGoalsCompleted = habits.filter(
     (h) => Object.values(h.completions).filter(Boolean).length >= (h.target || 50)
   ).length;
-  const bestCurrentStreak = habits.length ? Math.max(0, ...habits.map((h) => currentStreak(h.completions))) : 0;
+  const bestCurrentStreak = habits.length ? Math.max(0, ...habits.map((h) => currentStreak(h))) : 0;
+  const bestEverStreak = habits.length ? Math.max(0, ...habits.map((h) => longestStreak(h))) : 0;
+  const badgeStats = {
+    habitCount: habits.length,
+    totalCheckins,
+    goalsCompleted: totalGoalsCompleted,
+    bestEverStreak,
+    activeCount: activeHabits.length,
+    archivedCount: archivedHabits.length,
+  };
+  const unlockedBadgeCount = BADGES.filter((b) => b.check(badgeStats)).length;
   const weekDays = Array.from({ length: 7 }, (_, i) => dateStrDaysAgo(i)); // today first
   const weekCounts = weekDays.map((d) => habits.filter((h) => h.completions[d]).length);
   const weekMax = Math.max(1, ...weekCounts);
@@ -466,18 +696,135 @@ function HabitTracker() {
         }}
       />
 
+      {/* Slowly drifting glow blobs — gives the background a living, breathing quality */}
+      <div aria-hidden="true" style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "-14%",
+            left: "50%",
+            width: 340,
+            height: 340,
+            marginLeft: -170,
+            borderRadius: "9999px",
+            background: PALETTE[0].hex,
+            opacity: 0.18,
+            filter: "blur(80px)",
+            animation: "pulseGlow 6s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "-10%",
+            left: "-10%",
+            width: 280,
+            height: 280,
+            borderRadius: "9999px",
+            background: PALETTE[0].hex,
+            opacity: 0.1,
+            filter: "blur(60px)",
+            animation: "blobDriftA 14s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "5%",
+            right: "-15%",
+            width: 260,
+            height: 260,
+            borderRadius: "9999px",
+            background: PALETTE[1].hex,
+            opacity: 0.08,
+            filter: "blur(70px)",
+            animation: "blobDriftB 18s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "-10%",
+            left: "20%",
+            width: 240,
+            height: 240,
+            borderRadius: "9999px",
+            background: PALETTE[3].hex,
+            opacity: 0.06,
+            filter: "blur(65px)",
+            animation: "blobDriftC 20s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "35%",
+            right: "10%",
+            width: 220,
+            height: 220,
+            borderRadius: "9999px",
+            background: PALETTE[2].hex,
+            opacity: 0.06,
+            filter: "blur(65px)",
+            animation: "blobDriftD 16s ease-in-out infinite",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10%",
+            right: "-10%",
+            width: 260,
+            height: 260,
+            borderRadius: "9999px",
+            background: PALETTE[4].hex,
+            opacity: 0.05,
+            filter: "blur(70px)",
+            animation: "blobDriftE 22s ease-in-out infinite",
+          }}
+        />
+      </div>
+
+      {/* Rising embers — a quiet nod to the flame/streak motif */}
+      <div aria-hidden="true" style={{ position: "fixed", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+        {Array.from({ length: 22 }).map((_, i) => {
+          const left = Math.round((i * 43) % 100);
+          const size = 2 + (i % 3);
+          const duration = 8 + (i % 6) * 2;
+          const delay = -(i * 1.7);
+          const drift = (i % 2 === 0 ? 1 : -1) * (10 + (i % 4) * 6);
+          const emberColor = i % 3 === 0 ? PALETTE[1].hex : PALETTE[0].hex;
+          return (
+            <span
+              key={i}
+              style={{
+                position: "absolute",
+                bottom: -10,
+                left: `${left}%`,
+                width: size,
+                height: size,
+                borderRadius: "9999px",
+                background: emberColor,
+                boxShadow: `0 0 6px ${emberColor}`,
+                "--drift": `${drift}px`,
+                animation: `emberRise ${duration}s linear ${delay}s infinite`,
+              }}
+            />
+          );
+        })}
+      </div>
+
       <div className="relative pb-28">
       {/* Header */}
       <div
         style={{
           background: `linear-gradient(180deg, ${BG_CARD} 0%, transparent 100%)`,
-          borderBottom: `1px solid ${BORDER}`,
         }}
         className="px-6 pt-14 pb-9"
       >
         <div className="flex items-start justify-between mb-5">
           <div
-            style={{ background: "rgba(224,163,57,0.12)", border: `1px solid ${PALETTE[0].hex}` }}
+            style={{ background: "rgba(224,163,57,0.12)", border: `1px solid ${PALETTE[0].hex}`, animation: "floatY 3.2s ease-in-out infinite" }}
             className="w-11 h-11 rounded-full flex items-center justify-center"
           >
             <Link2 size={19} color={PALETTE[0].hex} strokeWidth={2.2} />
@@ -565,18 +912,14 @@ function HabitTracker() {
           position: "sticky",
           top: 0,
           zIndex: 20,
-          background: `${BG}ee`,
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-          borderBottom: `1px solid ${BORDER}`,
         }}
-        className="px-5 py-3"
+        className="px-5 pt-3 pb-5"
       >
         <div
           style={{
             position: "relative",
-            background: BG_CELL,
-            border: `1px solid ${BORDER}`,
+            background: "rgba(255,255,255,0.04)",
+            boxShadow: "inset 0 1px 3px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.05)",
             borderRadius: 9999,
           }}
           className="flex p-1"
@@ -587,12 +930,12 @@ function HabitTracker() {
               position: "absolute",
               top: 4,
               bottom: 4,
-              width: "calc(100% / 3 - 8px)",
-              right: `calc(${TAB_LIST.findIndex((t) => t.id === tab)} * (100% / 3) + 4px)`,
-              background: PALETTE[0].hex,
+              width: `calc(100% / ${TAB_LIST.length} - 8px)`,
+              right: `calc(${TAB_LIST.findIndex((t) => t.id === tab)} * (100% / ${TAB_LIST.length}) + 4px)`,
+              background: `linear-gradient(155deg, #EDBA5E, ${PALETTE[0].hex})`,
               borderRadius: 9999,
-              boxShadow: `0 3px 10px ${PALETTE[0].hex}4d`,
-              transition: "right 0.28s cubic-bezier(0.3,0.8,0.4,1)",
+              boxShadow: `0 4px 14px ${PALETTE[0].hex}66, inset 0 1px 0 rgba(255,255,255,0.25)`,
+              transition: "right 0.32s cubic-bezier(0.3,0.8,0.4,1)",
             }}
           />
           {TAB_LIST.map(({ id, label, Icon }) => {
@@ -602,7 +945,7 @@ function HabitTracker() {
                 key={id}
                 onClick={() => setTab(id)}
                 style={{ color: active ? "#151F19" : TEXT_MUTED, position: "relative", zIndex: 1 }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors tap-3d"
               >
                 <Icon size={14} strokeWidth={active ? 2.4 : 1.8} />
                 {label}
@@ -642,26 +985,41 @@ function HabitTracker() {
         )}
 
         {activeHabits.map((habit) => {
-          const streak = currentStreak(habit.completions);
-          const longest = longestStreak(habit.completions);
+          const streak = currentStreak(habit);
+          const longest = longestStreak(habit);
           const doneToday = !!habit.completions[today];
+          const frozenToday = !!(habit.freezes && habit.freezes[today]);
           const target = habit.target || 50;
           const progress = Object.values(habit.completions).filter(Boolean).length;
           const complete = progress >= target;
           const rows = chunk(Array.from({ length: target }), 10);
+          const scheduleDays = (habit.schedule && habit.schedule.days && habit.schedule.days.length) ? habit.schedule.days : ALL_DAYS;
+          const isDaily = scheduleDays.length === 7;
+          const scheduleLabel = isDaily
+            ? null
+            : scheduleDays.map((d) => WEEKDAY_LETTERS[d]).join(" ");
 
           return (
             <div
               key={habit.id}
               style={{ background: BG_CARD, border: `1px solid ${BORDER}` }}
-              className="rounded-xl px-4 pt-4 pb-3.5"
+              className="rounded-xl px-4 pt-4 pb-3.5 card-in tap-3d"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <span
-                    style={{ background: habit.color }}
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  />
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "9999px",
+                      background: `${habit.color}22`,
+                      border: `1px solid ${habit.color}`,
+                      fontSize: 13,
+                    }}
+                    className="flex items-center justify-center flex-shrink-0"
+                  >
+                    {habit.emoji || "⭐"}
+                  </span>
                   <span className="font-medium text-[15px] truncate">{habit.name}</span>
                   {complete && <span style={{ fontSize: 13 }}>🏆</span>}
                 </div>
@@ -708,11 +1066,21 @@ function HabitTracker() {
                 </div>
               </div>
 
+              {habit.purpose && (
+                <p
+                  style={{ color: TEXT_MUTED, fontStyle: "italic" }}
+                  className="text-xs leading-relaxed mb-2.5"
+                >
+                  {habit.purpose}
+                </p>
+              )}
+
               <div
                 style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }}
                 className="text-xs mb-3"
               >
                 {progress} מתוך {target}
+                {scheduleLabel && <span> · {scheduleLabel}</span>}
               </div>
 
               {/* Progress grid: one ring per goal count, filled in order of completion */}
@@ -755,17 +1123,33 @@ function HabitTracker() {
                 <span style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }} className="text-xs">
                   שיא רצף: {longest} ימים
                 </span>
-                <button
-                  onClick={() => toggleToday(habit.id)}
-                  style={{
-                    background: doneToday ? "transparent" : habit.color,
-                    color: doneToday ? TEXT_MUTED : "#151F19",
-                    border: doneToday ? `1px solid ${BORDER}` : "none",
-                  }}
-                  className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors"
-                >
-                  {doneToday ? "בוצע היום ✓" : "סמן להיום"}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {!doneToday && (
+                    <button
+                      onClick={() => toggleFreeze(habit.id)}
+                      title="יום חופש מתוכנן — לא שובר את הרצף, לא נספר להתקדמות"
+                      style={{
+                        background: frozenToday ? "rgba(91,132,168,0.15)" : "transparent",
+                        color: frozenToday ? PALETTE[3].hex : TEXT_MUTED,
+                        border: `1px solid ${frozenToday ? PALETTE[3].hex : BORDER}`,
+                      }}
+                      className="text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors tap-3d flex items-center gap-1"
+                    >
+                      ❄️ {frozenToday ? "יום חופש" : ""}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => toggleToday(habit.id)}
+                    style={{
+                      background: doneToday ? "transparent" : habit.color,
+                      color: doneToday ? TEXT_MUTED : "#151F19",
+                      border: doneToday ? `1px solid ${BORDER}` : "none",
+                    }}
+                    className="text-xs font-medium px-3 py-1.5 rounded-full transition-colors tap-3d"
+                  >
+                    {doneToday ? "בוצע היום ✓" : "סמן להיום"}
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -878,6 +1262,48 @@ function HabitTracker() {
               }}
               className="w-full rounded-lg px-3 py-2.5 text-sm outline-none mb-3"
             />
+
+            <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+              אימוג׳י
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(true)}
+              style={{ background: BG_CELL, border: `1px solid ${BORDER}` }}
+              className="w-full rounded-lg px-3 py-2.5 mb-4 flex items-center gap-3 tap-3d"
+            >
+              <span
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: "9999px",
+                  background: `${newColor}22`,
+                  border: `1px solid ${newColor}`,
+                  fontSize: 17,
+                }}
+                className="flex items-center justify-center flex-shrink-0"
+              >
+                {newEmoji}
+              </span>
+              <span style={{ color: TEXT_MAIN }} className="text-sm flex-1 text-right">
+                בחר אימוג׳י
+              </span>
+              <ChevronDown size={15} strokeWidth={1.8} color={TEXT_MUTED} style={{ transform: "rotate(-90deg)" }} />
+            </button>
+
+            <textarea
+              value={newPurpose}
+              onChange={(e) => setNewPurpose(e.target.value)}
+              placeholder="למה זה חשוב לך? (לא חובה) — לדוגמה: להרגיש יותר ערני בבוקר"
+              rows={2}
+              style={{
+                background: BG_CELL,
+                border: `1px solid ${BORDER}`,
+                color: TEXT_MAIN,
+                resize: "none",
+              }}
+              className="w-full rounded-lg px-3 py-2.5 text-sm outline-none mb-4 leading-relaxed"
+            />
             <div className="flex items-center gap-2 mb-4 flex-wrap">
               {PALETTE.map((c) => (
                 <button
@@ -924,6 +1350,40 @@ function HabitTracker() {
                   }}
                 />
               </div>
+            </div>
+
+            <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+              באילו ימים
+            </div>
+            <div className="flex items-center gap-1.5 mb-4">
+              <button
+                onClick={() => setNewScheduleDays(ALL_DAYS)}
+                style={{
+                  background: newScheduleDays.length === 7 ? newColor : "transparent",
+                  color: newScheduleDays.length === 7 ? "#151F19" : TEXT_MUTED,
+                  border: `1px solid ${newScheduleDays.length === 7 ? newColor : BORDER}`,
+                }}
+                className="text-xs font-medium px-2.5 py-1.5 rounded-full flex-shrink-0"
+              >
+                כל יום
+              </button>
+              {WEEKDAY_LETTERS.map((letter, day) => {
+                const active = newScheduleDays.includes(day);
+                return (
+                  <button
+                    key={day}
+                    onClick={() => toggleScheduleDay(day)}
+                    style={{
+                      background: active ? newColor : "transparent",
+                      color: active ? "#151F19" : TEXT_MUTED,
+                      border: `1px solid ${active ? newColor : BORDER}`,
+                    }}
+                    className="w-8 h-8 rounded-full text-xs font-medium flex-shrink-0 tap-3d"
+                  >
+                    {letter}
+                  </button>
+                );
+              })}
             </div>
 
             <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
@@ -996,7 +1456,7 @@ function HabitTracker() {
             <button
               onClick={submitHabitForm}
               style={{ background: newColor, color: "#151F19" }}
-              className="w-full rounded-lg py-2.5 text-sm font-medium mt-1"
+              className="w-full rounded-lg py-2.5 text-sm font-medium mt-1 tap-3d"
             >
               {editingId ? "שמור שינויים" : "הוסף הרגל"}
             </button>
@@ -1009,7 +1469,7 @@ function HabitTracker() {
         <button
           onClick={openAddSheet}
           style={{ background: PALETTE[0].hex, color: "#151F19" }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full shadow-lg px-5 py-3 flex items-center gap-2 text-sm font-medium z-10"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full shadow-lg px-5 py-3 flex items-center gap-2 text-sm font-medium z-10 tap-3d"
         >
           <Plus size={16} strokeWidth={2.5} />
           הרגל חדש
@@ -1153,6 +1613,66 @@ function HabitTracker() {
             </>
           )}
         </div>
+      ) : tab === "achievements" ? (
+        <div className="px-5 pt-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }} className="text-2xl font-semibold">
+              הישגים
+            </h2>
+            <span
+              style={{ color: TEXT_MUTED, fontFamily: "'IBM Plex Mono', monospace" }}
+              className="text-xs"
+            >
+              {unlockedBadgeCount} / {BADGES.length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {BADGES.map((badge) => {
+              const unlocked = badge.check(badgeStats);
+              const pct = Math.round(badge.progress(badgeStats) * 100);
+              return (
+                <div
+                  key={badge.id}
+                  style={{
+                    background: BG_CARD,
+                    border: `1px solid ${unlocked ? PALETTE[0].hex : BORDER}`,
+                    opacity: unlocked ? 1 : 0.75,
+                  }}
+                  className="rounded-xl px-4 py-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span style={{ fontSize: 26, filter: unlocked ? "none" : "grayscale(1)" }}>
+                      {badge.emoji}
+                    </span>
+                    {!unlocked && <Lock size={13} strokeWidth={1.8} color={TEXT_MUTED} />}
+                  </div>
+                  <div
+                    style={{ color: unlocked ? TEXT_MAIN : TEXT_MUTED, fontFamily: "'Fraunces', serif" }}
+                    className="text-sm font-semibold mb-1"
+                  >
+                    {badge.label}
+                  </div>
+                  <div style={{ color: TEXT_MUTED }} className="text-[11px] leading-relaxed mb-2.5">
+                    {badge.desc}
+                  </div>
+                  {!unlocked && (
+                    <div style={{ background: BORDER, height: 4, borderRadius: 9999 }}>
+                      <div
+                        style={{
+                          width: `${pct}%`,
+                          height: 4,
+                          background: PALETTE[0].hex,
+                          borderRadius: 9999,
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ) : (
         <div className="px-5 pt-6">
           <h2
@@ -1242,6 +1762,73 @@ function HabitTracker() {
       )}
       </div>
 
+      {/* Emoji picker */}
+      {showEmojiPicker && (
+        <div
+          onClick={() => setShowEmojiPicker(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(9,14,11,0.75)", zIndex: 60 }}
+          className="flex items-end justify-center"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: BG_CARD,
+              borderTop: `1px solid ${BORDER}`,
+              maxHeight: "80vh",
+            }}
+            className="w-full rounded-t-2xl px-5 pt-4 pb-6 flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-3 flex-shrink-0">
+              <span style={{ fontFamily: "'Fraunces', serif", color: TEXT_MAIN }} className="text-lg font-semibold">
+                בחר אימוג׳י
+              </span>
+              <button onClick={() => setShowEmojiPicker(false)} style={{ color: TEXT_MUTED }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <input
+              value={newEmoji}
+              onChange={(e) => {
+                const chars = Array.from(e.target.value);
+                setNewEmoji(chars.length ? chars[chars.length - 1] : "");
+              }}
+              placeholder="או הקלידו כל אימוג׳י אחר מהמקלדת שלכם"
+              style={{ background: BG_CELL, border: `1px solid ${BORDER}`, color: TEXT_MAIN }}
+              className="w-full rounded-lg px-3 py-2.5 text-sm outline-none mb-4 flex-shrink-0 text-center"
+            />
+
+            <div style={{ overflowY: "auto" }} className="flex-1">
+              {EMOJI_CATEGORIES.map((cat) => (
+                <div key={cat.title} className="mb-4">
+                  <div style={{ color: TEXT_MUTED }} className="text-xs mb-2">
+                    {cat.title}
+                  </div>
+                  <div className="grid grid-cols-8 gap-1.5">
+                    {cat.items.map((e) => (
+                      <button
+                        key={e}
+                        onClick={() => {
+                          setNewEmoji(e);
+                          setShowEmojiPicker(false);
+                        }}
+                        style={{
+                          background: newEmoji === e ? "rgba(224,163,57,0.15)" : "transparent",
+                          border: `1px solid ${newEmoji === e ? PALETTE[0].hex : "transparent"}`,
+                        }}
+                        className="rounded-lg py-1.5 text-lg flex items-center justify-center tap-3d"
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Goal-reached celebration */}
       {celebrateHabit && (
         <div
@@ -1305,7 +1892,7 @@ function HabitTracker() {
             <button
               onClick={() => setCelebrateHabit(null)}
               style={{ background: celebrateHabit.color, color: "#151F19" }}
-              className="rounded-full px-6 py-2 text-sm font-medium"
+              className="rounded-full px-6 py-2 text-sm font-medium tap-3d"
             >
               יש!
             </button>
